@@ -1,3 +1,6 @@
+Work in progress
+Based of the DiFX datasim by Zheng Meyer-Zhao: https://github.com/difx/difx.git
+------------
 Requirements:
 *DiFX-2.4 or above
 *GSL
