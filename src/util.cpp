@@ -101,12 +101,19 @@ int initSubbands(Configuration* config, int configindex, Model* model, float spe
     vpbytes = (framebytes - VDIF_HEADER_BYTES) / numrecordedbands + VDIF_HEADER_BYTES;
     vpsamps = (framebytes - VDIF_HEADER_BYTES) / numrecordedbands * 2;
 
-    freq = config->getDRecordedFreq(configindex, antidx, sbidx);
-    bw = config->getDRecordedBandwidth(configindex, antidx, sbidx);
+    // sbidx is the recorded *band* index (0..numrecordedbands-1), which may be
+    // larger than numrecordedfreqs when there are multiple polarizations.
+    // Map it to the local recorded *frequency* index before querying freq/bw,
+    // otherwise getDRecordedFreq()/getDRecordedBandwidth() read out of bounds.
+    int localfreqidx = config->getDLocalRecordedFreqIndex(configindex, antidx, sbidx);
+    freq = config->getDRecordedFreq(configindex, antidx, localfreqidx);
+    bw = config->getDRecordedBandwidth(configindex, antidx, localfreqidx);
     if(!is_integer((freq - minStartFreq) / specRes))
     {
+      cout.precision(16);
       cout << "StartIndex position is not an integer ... " << endl
-           << "Something is wrong here ... " << endl;
+           << "Something is wrong here ... " << endl
+           << "freq = " << freq << ", minStartFreq = " << minStartFreq << ", specRes = " << specRes << endl;
       return EXIT_FAILURE;
     }
     else
