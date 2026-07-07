@@ -21,8 +21,10 @@
 #ifndef __CATVDIF_H__
 #define __CATVDIF_H__
 
-#include "configuration.h"
+#include <string>
 #include "vdifzipper.h"
+
+using std::string;
 
 void catvdif(string antname, size_t verbose, int antidx, size_t div);
 

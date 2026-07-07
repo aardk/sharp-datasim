@@ -24,18 +24,18 @@
 #include <sstream>
 #include <stdint.h>
 #include "architecture.h"
-#include "configuration.h"
+#include "jsonconfig.h"
 #include "vdifio.h"
 #include "vdifzipper.h"
 #include <mpi.h>
 
 using namespace std;
 /**
- * @config Configuration file
- * @configindex Configuration index
+ * @config JSON configuration
+ * @configindex Configuration index (unused, kept for API compatibility)
  * @durus Observation time in microseconds
  */
-void vdifzipper(Configuration* config, int configindex, float durus, size_t verbose, int antidx, int color)
+void vdifzipper(JsonConfig* config, int configindex, float durus, size_t verbose, int antidx, int color)
 {
   int mjd, seconds;
 

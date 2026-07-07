@@ -17,7 +17,6 @@ AC_PROG_MAKE_SET
 # Checks for libraries.
 AC_CHECK_LIB([gsl], [gsl_ran_gaussian_ziggurat])
 AC_CHECK_LIB([gslcblas], [cblasdsdot])
-AC_CHECK_LIB([mpifxcorr], [calculateDelayInterpolator])
 
 # Use C++11
 #AX_CXX_COMPILE_STDCXX_0X([ext],[mandatory])

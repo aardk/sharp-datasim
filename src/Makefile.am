@@ -8,7 +8,13 @@ datasim_SOURCES = subband.h \
                   util.cpp \
                   vdifzipper.h \
                   vdifzipper.cpp \
+                  catvdif.h \
                   catvdif.cpp \
+                  delaytable.h \
+                  delaytable.cpp \
+                  jsonconfig.h \
+                  jsonconfig.cpp \
+                  json.hpp \
                   datasim.h \
                   datasim.cpp
 

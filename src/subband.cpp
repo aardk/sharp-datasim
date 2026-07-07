@@ -30,7 +30,7 @@
 #include "util.h"
 #include "subband.h"
 #include "datasim.h"
-#include "model.h"
+#include "delaytable.h"
 #include "vdifzipper.h"
 
 using namespace std;
@@ -563,7 +563,7 @@ void Subband::processdatawithpcal(int pcal)
  * update nearestsample
  * calculate fractional sample error for the next vdif packet and update procptr
  */
-void Subband::updatevalues(Model* model)
+void Subband::updatevalues(DelayModel* model)
 {
   double prevdelay = d_delaycoeffs[1];
   double prevrate = d_delaycoeffs[0];

@@ -26,12 +26,13 @@
 #include "vdifio.h"
 #include "util.h"
 #include "datasim.h"
-#include "configuration.h"
+#include "jsonconfig.h"
+#include "delaytable.h"
 
 using namespace std;
 
 
-int initSubbands(Configuration* config, int configindex, Model* model, float specRes,
+int initSubbands(JsonConfig* config, int configindex, DelayModel* model, float specRes,
                   float minStartFreq, vector<Subband*> &subbands, int numsubbands,
                   float tdur, setup setupinfo, int* sbinfo, int color, float durus)
 {
@@ -171,7 +172,7 @@ bool is_integer(float num)
 /*
  * Calculate the maximum spectrum resolution that can be used by all antennas
  */
-int getSpecRes(Configuration* config, int configindex, float& specRes, size_t verbose)
+int getSpecRes(JsonConfig* config, int configindex, float& specRes, size_t verbose)
 {
   size_t cnt = 0;
   float tempSpecRes;
@@ -224,7 +225,7 @@ int getSpecRes(Configuration* config, int configindex, float& specRes, size_t ve
 /*
  * Calculate the maximum band covereage (bandwidth * nChans) among all antennas
  */
-float getMaxChanFreq(Configuration* config, int configindex, size_t verbose)
+float getMaxChanFreq(JsonConfig* config, int configindex, size_t verbose)
 {
   float chanFreq, maxChanFreq = 0;
   for(int i = 0; i < config->getNumDataStreams(); i++)
@@ -242,7 +243,7 @@ float getMaxChanFreq(Configuration* config, int configindex, size_t verbose)
 /*
  * Calculate the number of samples to be generated per time block for the common signal
  */
-int getNumSamps(Configuration* config, int configindex, float specRes, size_t verbose)
+int getNumSamps(JsonConfig* config, int configindex, float specRes, size_t verbose)
 {
   float maxChanFreq = getMaxChanFreq(config, configindex, verbose);
   assert(is_integer(maxChanFreq / specRes));
@@ -252,7 +253,7 @@ int getNumSamps(Configuration* config, int configindex, float specRes, size_t ve
 /*
  * Get the lowest start frequency among all antennas
  */
-float getMinStartFreq(Configuration* config, int configindex, size_t verbose)
+float getMinStartFreq(JsonConfig* config, int configindex, size_t verbose)
 {
   float startFreq;
   float minStartFreq = config->getDRecordedFreq(configindex, 0, 0);
@@ -303,7 +304,7 @@ void gencplx(float* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verb
  * quantization
  * pack to vdif
  */
- int processAndPacketize(vector<Subband*>& sbVec, Model* model, size_t verbose, int pcal)
+ int processAndPacketize(vector<Subband*>& sbVec, DelayModel* model, size_t verbose, int pcal)
  {
    vector<Subband*>::iterator it;
    for(it = sbVec.begin(); it != sbVec.end(); ++it)

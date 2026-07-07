@@ -22,11 +22,15 @@
 #define __UTIL_H__
 
 #include <cstdlib>
+#include <vector>
 #include <gsl/gsl_randist.h>
 #include <unistd.h>
 #include <mpi.h>
-#include "configuration.h"
+#include "jsonconfig.h"
+#include "delaytable.h"
 #include "subband.h"
+
+using std::vector;
 
 /* parameters used for random number generation */
 #define MEAN 1.0
@@ -45,14 +49,14 @@ typedef struct setup {
   unsigned int seed;                        // random number generator seed
   float sfluxdensity;                       // source flux density in Jansky
   int antSEFDs[MAXANT] ;                    // antenna SEFD
-  char inputfilename[MAXLEN];               // .input file name
+  char inputfilename[MAXLEN];               // JSON configuration file name
   float linesignal[LINESIGLEN];             // spectral line signal
   int numdivs;                              // number of parts to divide into for time-based parallelisation
   int pcal;                                 // phasecal interval
   int specres;                              // scaling factor of spectral resolution
 } setup;
 
-int initSubbands(Configuration* config, int configindex, Model* model, float specRes,
+int initSubbands(JsonConfig* config, int configindex, DelayModel* model, float specRes,
                   float minStartFreq, vector<Subband*> &subbands, int numsubbands,
                   float tdur, setup setupinfo, int* sbinfo, int color, float durus);
 
@@ -65,22 +69,22 @@ bool is_integer(float num);
 /*
  * Calculate the maximum spectrum resolution that can be used by all antennas
  */
-int getSpecRes(Configuration* config, int configindex, float& specRes, size_t verbose);
+int getSpecRes(JsonConfig* config, int configindex, float& specRes, size_t verbose);
 
 /*
  * Calculate the maximum subband width among all antennas
  */
-float getMaxChanFreq(Configuration* config, int configindex, size_t verbose);
+float getMaxChanFreq(JsonConfig* config, int configindex, size_t verbose);
 
 /*
  * Calculate the number of samples to be generated per time block for the common signal
  */
-int getNumSamps(Configuration* config, int configindex, float specRes, size_t verbose);
+int getNumSamps(JsonConfig* config, int configindex, float specRes, size_t verbose);
 
 /*
  * Get the lowest start frequency among all antennas
  */
-float getMinStartFreq(Configuration* config, int configindex, size_t verbose);
+float getMinStartFreq(JsonConfig* config, int configindex, size_t verbose);
 
 /*
  * Generate complex numbers using IPP Library
@@ -105,7 +109,7 @@ void gencplx(float* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verb
  * quantization
  * pack to vdif
  */
- int processAndPacketize(vector<Subband*>& sbVec, Model* model, size_t verbose, int pcal);
+ int processAndPacketize(vector<Subband*>& sbVec, DelayModel* model, size_t verbose, int pcal);
 
  /*
  * calculate the lowest process pointer in terms of time among all subband arrays

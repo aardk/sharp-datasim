@@ -24,7 +24,6 @@
 #include <sstream>
 #include <stdint.h>
 #include "architecture.h"
-#include "configuration.h"
 #include "vdifio.h"
 #include "catvdif.h"
 #include <mpi.h>

@@ -1,6 +1,7 @@
 /*****************************************************************************
 *    <DataSim: VLBI data simulator>                                          *
 *    Copyright (C) <2015> <Zheng Meyer-Zhao>                                 *
+*                  <2026> <Aard Keimpema>
 *                                                                            *
 *    This file is part of DataSim.                                           *
 *                                                                            *
@@ -24,15 +25,16 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <stdexcept>
 #include <gsl/gsl_randist.h>
 #include <getopt.h>
 #include <mpi.h>
-#include "configuration.h"
 #include "datasim.h"
+#include "jsonconfig.h"
+#include "delaytable.h"
 #include "util.h"
 #include "subband.h"
 #include "vdifio.h"
-#include "model.h"
 #include "vdifzipper.h"
 #include "catvdif.h"
 
@@ -41,23 +43,15 @@ using namespace std;
 static void usage(int argc, char **argv)
 {
   cout << endl;
-  cout << "Usage:  " << argv[0] << " [<options>] <input file>" << endl;
+  cout << "Usage:  " << argv[0] << " [<options>] <config.json>" << endl;
+  cout << endl;
+  cout << "  All simulation settings (start time, duration, stations, SEFDs,\n"
+       << "  SFXC delay tables, bands, ...) are read from the JSON configuration\n"
+       << "  file; see the examples directory for the schema." << endl;
   cout << endl;
   cout << "  options can include:" << endl;
   cout << "     -h" << endl;
   cout << "     --help        display this information and quit." << endl;
-  cout << endl;
-  cout << "     -f" << endl;
-  cout << "     --flux        source flux density in Jansky (default is 100 Jy)." << endl;
-  cout << endl;
-  cout << "     -s" << endl;
-  cout << "     --sefd        antenna SEFDs in a comma-seperated list in Jansky.\n"
-       << "                   If there are more antennas than provided SEFDs,\n"
-       << "                   SEFD of the remaining antennas is set to 1000 Jansky.\n"
-       << "                   Maximum number of antennas supported is 20."<< endl;
-  cout << endl;
-  cout << "     -d" << endl;
-  cout << "     --seed        random number generator seed." << endl;
   cout << endl;
   cout << "     -v" << endl;
   cout << "     --verbose     increase the verbosity of the output; -v -v for more." << endl;
@@ -66,19 +60,6 @@ static void usage(int argc, char **argv)
   cout << "     --test        run in test mode, generate 1 second data for each station,\n"
        << "                   no matter what's given in the configuration file." << endl;
   cout << endl;
-  cout << "     -l" << endl;
-  cout << "     --specline    spectral line in the form of frequency,amplitude,rms, e.g. -l 16,10,3 ." << endl;
-  cout << endl;
-  //cout << "     -n" << endl;
-  //cout << "     --numdivs     number of parts to be divided into for time-based parallelisation." << endl;
-  //cout << endl;
-  cout << "     -p" << endl;
-  cout << "     --pcal        phasecal interval in MHz, e.g. -p 1 ." << endl;
-  cout << endl;
-  cout << "     -r" << endl;
-  cout << "     --specres     scaling factor of spectral resolution, \n"
-       << "                   e.g. -r 4 will generate 4 times more samples than by default." << endl;
-  cout << endl;
 }
 
 static void cmdparser(int argc, char* argv[], setup &setupinfo)
@@ -86,19 +67,12 @@ static void cmdparser(int argc, char* argv[], setup &setupinfo)
   char tmp;
   static struct option long_options[] = {
     {"help",      no_argument,        0,  'h'},
-    {"flux",      required_argument,  0,  'f'},
-    {"sefd",      required_argument,  0,  's'},
-    {"seed",      required_argument,  0,  'd'},
     {"verbose",   no_argument,        0,  'v'},
     {"test",      no_argument,        0,  't'},
-    {"specline",  required_argument,  0,  'l'},
-    {"numdivs",   required_argument,  0,  'n'},
-    {"pcal",      required_argument,  0,  'p'},
-    {"specres",   required_argument,  0,  'r'},
     {0,           0,                  0,   0 }
   };
   int long_index = 0;
-  while((tmp=getopt_long(argc,argv,"hf:s:d:vtl:n:p:r:",
+  while((tmp=getopt_long(argc,argv,"hvt",
               long_options, &long_index)) != -1)
   {
     switch(tmp)
@@ -107,111 +81,22 @@ static void cmdparser(int argc, char* argv[], setup &setupinfo)
         usage(argc, argv);
         exit (EXIT_SUCCESS);
         break;
-      case 'f':
-        if(*optarg == '-' || (atof(optarg) - 0.0) < EPSILON)
-        {
-          cerr << "Option -f requires a non-zero floating-point number as argument." << endl;
-          exit (EXIT_FAILURE);
-        }
-        else
-          setupinfo.sfluxdensity = atof(optarg);
-        break;
-      case 's':
-        if(*optarg == '-' || *optarg == ' ')
-        {
-          cerr << "Option -s requires a comma-separated list of unsigned integer as argument." << endl;
-          exit (EXIT_FAILURE);
-        }
-        else
-        {
-          istringstream ss(optarg);
-          string token;
-          int cnt = 0;
-          while(getline(ss, token, ','))
-          {
-            setupinfo.antSEFDs[cnt] = atoi(token.c_str());
-            cnt++;
-          }
-        }
-        break;
-      case 'd':
-        if(*optarg == '-' || *optarg == ' ')
-        {
-          cerr << "Option -d requires an unsigned integer as argument." << endl;
-          exit (EXIT_FAILURE);
-        }
-        else
-        {
-          setupinfo.seed = atoi(optarg);
-        }
-        break;
       case 'v':
         setupinfo.verbose++;
         break;
       case 't':
-      setupinfo.test = 1;
-      break;
-      case 'l':
-        if(*optarg == '-' || *optarg == ' ')
-        {
-          cerr << "Option -l requires argument in the form of frequency,amplitude,rms." << endl;
-          exit (EXIT_FAILURE);
-        }
-        else
-        {
-          istringstream ss(optarg);
-          string token;
-          int idx;
-          for(idx = 0; idx < LINESIGLEN; idx++)
-          {
-            getline(ss, token, ',');
-            setupinfo.linesignal[idx] = atof(token.c_str());
-          }
-        }
+        setupinfo.test = 1;
         break;
-        case 'n':
-          if(*optarg == '-' || *optarg == ' ')
-          {
-            cerr << "Option -n requires an unsigned integer as argument." << endl;
-            exit (EXIT_FAILURE);
-          }
-          else
-          {
-            setupinfo.numdivs = atoi(optarg);
-          }
-          break;
-        case 'p':
-          if(*optarg == '-' || *optarg == ' ')
-          {
-            cerr << "Option -p requires an unsigned integer as argument." << endl;
-            exit (EXIT_FAILURE);
-          }
-          else
-          {
-            setupinfo.pcal = atoi(optarg);
-          }
-          break;
-        case 'r':
-            if(*optarg == '-' || *optarg == ' ')
-            {
-              cerr << "Option -r requires an unsigned integer as argument." << endl;
-              exit (EXIT_FAILURE);
-            }
-            else
-            {
-              setupinfo.specres = atoi(optarg);
-            }
-            break;
       default:
         usage(argc, argv);
         exit (EXIT_FAILURE);
         break;
     }
   }
-  // check if input VDIF file name is given
+  // check if a JSON configuration file name is given
   if(optind > argc - 1)
   {
-    cerr << "No .input file provided, nothing to do ..." << endl;
+    cerr << "No JSON configuration file provided, nothing to do ..." << endl;
     usage(argc, argv);
     exit (EXIT_FAILURE);
   }
@@ -225,6 +110,28 @@ static void cmdparser(int argc, char* argv[], setup &setupinfo)
   {
     strcpy(setupinfo.inputfilename, argv[optind]);
   }
+}
+
+/*
+ * Fill the simulation settings of the setup struct from the JSON
+ * configuration (every rank parses the JSON file itself).
+ */
+static void applyconfig(JsonConfig* config, setup &setupinfo)
+{
+  int numdatastreams = config->getNumDataStreams();
+  if(numdatastreams > MAXANT)
+    throw runtime_error("more stations in JSON configuration than supported (MAXANT)");
+
+  setupinfo.seed = config->getSeed();
+  setupinfo.sfluxdensity = config->getFluxDensity();
+  setupinfo.numdivs = config->getNumDivs();
+  setupinfo.pcal = config->getPcal();
+  setupinfo.specres = config->getSpecResScale();
+  for(int i = 0; i < numdatastreams; i++)
+    setupinfo.antSEFDs[i] = config->getSEFD(i);
+  const vector<float> &linesignal = config->getLineSignal();
+  for(size_t i = 0; i < LINESIGLEN; i++)
+    setupinfo.linesignal[i] = (i < linesignal.size()) ? linesignal[i] : 0;
 }
 
 int main(int argc, char* argv[])
@@ -256,7 +163,8 @@ int main(int argc, char* argv[])
     setupinfo.pcal = 0;
     setupinfo.specres = 1;
 
-    // parse command line argument
+    // parse command line argument (verbose/test/JSON file name;
+    // all other settings come from the JSON configuration)
     cmdparser(argc, argv, setupinfo);
   }
 
@@ -287,12 +195,12 @@ int main(int argc, char* argv[])
 
   float tdur = 0.5 * 1e6;
   float testdur = 1; // time duration of test mode
-  Configuration* config;
-  Model* model;
+  JsonConfig* config;
+  DelayModel* model;
   float dur;                            // duration of the simulated data in seconds
   float durus;                          // duration of the simulated data in microseconds
   float specRes, minStartFreq;
-  int numdatastreams, numrecordedbands, freqindex;
+  int numdatastreams, numrecordedbands;
   int numSamps;                         // number of samples to be generated per time block for the common signal
   size_t stime;                         // step time in microsecond == time block
   int configindex = 0;
@@ -303,6 +211,25 @@ int main(int argc, char* argv[])
   double refvptime;                     // vptime is the time duration of the samples within the packet
   size_t framespersec;
 
+  // parse the JSON configuration and load the SFXC delay tables
+  try
+  {
+    config = new JsonConfig(setupinfo.inputfilename);
+    applyconfig(config, setupinfo);
+
+    vector<string> delaytables;
+    for(int i = 0; i < config->getNumDataStreams(); i++)
+      delaytables.push_back(config->getDelayTable(i));
+    model = new DelayModel(delaytables, config->getStartMJD(),
+                           config->getStartSeconds(), config->getScan());
+  }
+  catch(const exception &e)
+  {
+    cerr << "Process " << myid << ": " << e.what() << endl;
+    MPI_Abort(MPI_COMM_WORLD, ERROR);
+    return EXIT_FAILURE;
+  }
+
   // initialize random number generator
   gsl_rng **rng_inst;
   gsl_rng_env_setup();
@@ -310,9 +237,6 @@ int main(int argc, char* argv[])
   rng_inst = (gsl_rng **) malloc(numprocs * sizeof(gsl_rng *));
   rng_inst[myid] = gsl_rng_alloc (gsl_rng_ranlux389);
   gsl_rng_set(rng_inst[myid],setupinfo.seed+myid);
-
-  config = new Configuration(setupinfo.inputfilename, 0);
-  model = config->getModel();
 
   // retrieve general information from config
   // if in test mode, only generate data for 1 second
@@ -416,10 +340,9 @@ int main(int argc, char* argv[])
      {
        sbcount++;
        antsbcnt++;
-       freqindex = config->getDRecordedFreqIndex(configindex, i, j);
        cout << "Subband " << j << ":" << "\n"
-            << "  Frequency " << config->getFreqTableFreq(freqindex) << "\n"
-            << "  Bandwidth " << config->getFreqTableBandwidth(freqindex) << endl;
+            << "  Frequency " << config->getDRecordedFreq(configindex, i, j) << "\n"
+            << "  Bandwidth " << config->getDRecordedBandwidth(configindex, i, j) << endl;
      }
      antsb.push_back(antsbcnt);
     }
@@ -640,15 +563,19 @@ int main(int argc, char* argv[])
   }
   else
   {
-    string antname = config->getTelescopeName(myid);
     if(myid < numdatastreams)
+    {
+      string antname = config->getTelescopeName(myid);
       catvdif(antname, setupinfo.verbose, myid, div);
+    }
   }
 
   //if(myid < numdatastreams)
   //  catvdif(config, configindex, durus, setupinfo.verbose, myid, div);
 
   freeSubbands(subbands);
+  delete model;
+  delete config;
   if(myid == MASTER)
   {
     end = MPI_Wtime();

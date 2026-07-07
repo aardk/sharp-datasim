@@ -21,13 +21,14 @@
 #ifndef __VDIFZIPPER_H__
 #define __VDIFZIPPER_H__
 
-#include "configuration.h"
+#include <cstddef>
+#include "jsonconfig.h"
 
 #define BITS 2
 #define ISCOMPLEX 0
 #define BITSPERBYTE 8
 
-void vdifzipper(Configuration* config, int configindex, float durus, size_t verbose, int antidx, int color);
+void vdifzipper(JsonConfig* config, int configindex, float durus, size_t verbose, int antidx, int color);
 
 #endif /* __VDIFZIPPER_H__ */
 

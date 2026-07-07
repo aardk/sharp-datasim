@@ -25,7 +25,7 @@
 #include <fstream>
 #include <stdint.h>
 #include "architecture.h"
-#include "model.h"
+#include "delaytable.h"
 
 class Subband{
   public:
@@ -100,7 +100,7 @@ class Subband{
      * update nearest sample
      * update fractional sample error
      */
-    void updatevalues(Model* model);
+    void updatevalues(DelayModel* model);
 
     /*
      * Quantization
