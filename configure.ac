@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([datasim], [1.0], [zheng.meyer@gmail.com])
+AC_INIT([sharp-datasim], [1.0], [keimpema at jive dot eu])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/util.cpp])
 AC_CONFIG_HEADERS([config.h])

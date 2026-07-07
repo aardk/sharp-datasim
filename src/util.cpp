@@ -34,7 +34,7 @@ using namespace std;
 
 int initSubbands(JsonConfig* config, int configindex, DelayModel* model, float specRes,
                   float minStartFreq, vector<Subband*> &subbands, int numsubbands,
-                  float tdur, setup setupinfo, int* sbinfo, int color, float durus)
+                  float tdur, Setup setupinfo, int* sbinfo, int color, float durus)
 {
   for(size_t sbnum = 0; sbnum < (size_t)numsubbands; sbnum++)
   {

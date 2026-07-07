@@ -62,7 +62,7 @@ static void usage(int argc, char **argv)
   cout << endl;
 }
 
-static void cmdparser(int argc, char* argv[], setup &setupinfo)
+static void cmdparser(int argc, char* argv[], Setup &setupinfo)
 {
   char tmp;
   static struct option long_options[] = {
@@ -116,7 +116,7 @@ static void cmdparser(int argc, char* argv[], setup &setupinfo)
  * Fill the simulation settings of the setup struct from the JSON
  * configuration (every rank parses the JSON file itself).
  */
-static void applyconfig(JsonConfig* config, setup &setupinfo)
+static void applyconfig(JsonConfig* config, Setup &setupinfo)
 {
   int numdatastreams = config->getNumDataStreams();
   if(numdatastreams > MAXANT)
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-  setup setupinfo;
+  Setup setupinfo;
 
   // master parse command line argument
   // and send struct setupinfo to all worker processes
@@ -176,16 +176,16 @@ int main(int argc, char* argv[])
   MPI_Aint disp[NITEMS];
   MPI_Datatype structtype;
 
-  disp[0] = offsetof(setup, verbose);
-  disp[1] = offsetof(setup, test);
-  disp[2] = offsetof(setup, seed);
-  disp[3] = offsetof(setup, sfluxdensity);
-  disp[4] = offsetof(setup, antSEFDs);
-  disp[5] = offsetof(setup, inputfilename);
-  disp[6] = offsetof(setup, linesignal);
-  disp[7] = offsetof(setup, numdivs);
-  disp[8] = offsetof(setup, pcal);
-  disp[9] = offsetof(setup, specres);
+  disp[0] = offsetof(Setup, verbose);
+  disp[1] = offsetof(Setup, test);
+  disp[2] = offsetof(Setup, seed);
+  disp[3] = offsetof(Setup, sfluxdensity);
+  disp[4] = offsetof(Setup, antSEFDs);
+  disp[5] = offsetof(Setup, inputfilename);
+  disp[6] = offsetof(Setup, linesignal);
+  disp[7] = offsetof(Setup, numdivs);
+  disp[8] = offsetof(Setup, pcal);
+  disp[9] = offsetof(Setup, specres);
 
   MPI_Type_create_struct(NITEMS, block, disp, type, &structtype);
   MPI_Type_commit(&structtype);

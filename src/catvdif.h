@@ -24,9 +24,7 @@
 #include <string>
 #include "vdifzipper.h"
 
-using std::string;
-
-void catvdif(string antname, size_t verbose, int antidx, size_t div);
+void catvdif(std::string antname, size_t verbose, int antidx, size_t div);
 
 #endif /* __CATVDIF_H__ */
 

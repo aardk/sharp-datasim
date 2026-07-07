@@ -1,6 +1,7 @@
 /*****************************************************************************
 *    <DataSim: VLBI data simulator>                                          *
 *    Copyright (C) <2015> <Zheng Meyer-Zhao>                                 *
+*                  <2026> <Aard Keimpema>                                    *
 *                                                                            *
 *    This file is part of DataSim.                                           *
                                                                              *
@@ -30,8 +31,6 @@
 #include "delaytable.h"
 #include "subband.h"
 
-using std::vector;
-
 /* parameters used for random number generation */
 #define MEAN 1.0
 #define STDEV 1.0
@@ -43,7 +42,7 @@ using std::vector;
 
 #define MASTER 0
 
-typedef struct setup {
+struct Setup {
   int verbose;
   int test;                                 // test mode
   unsigned int seed;                        // random number generator seed
@@ -54,13 +53,13 @@ typedef struct setup {
   int numdivs;                              // number of parts to divide into for time-based parallelisation
   int pcal;                                 // phasecal interval
   int specres;                              // scaling factor of spectral resolution
-} setup;
+};
 
 int initSubbands(JsonConfig* config, int configindex, DelayModel* model, float specRes,
-                  float minStartFreq, vector<Subband*> &subbands, int numsubbands,
-                  float tdur, setup setupinfo, int* sbinfo, int color, float durus);
+                  float minStartFreq, std::vector<Subband*> &subbands, int numsubbands,
+                  float tdur, Setup setupinfo, int* sbinfo, int color, float durus);
 
-void freeSubbands(vector<Subband*> &subbands);
+void freeSubbands(std::vector<Subband*> &subbands);
 
 /*
  * Check whether the fractional part of a floating point number is 0
@@ -100,7 +99,7 @@ void gencplx(float* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verb
  * move data from the second half of the array to the first half
  * set the process pointer to the proper location
  */
- void movedata(vector<Subband*>& sbVec, size_t verbose);
+ void movedata(std::vector<Subband*>& sbVec, size_t verbose);
 
 /*
  * loop through each subband
@@ -109,12 +108,12 @@ void gencplx(float* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verb
  * quantization
  * pack to vdif
  */
- int processAndPacketize(vector<Subband*>& sbVec, DelayModel* model, size_t verbose, int pcal);
+ int processAndPacketize(std::vector<Subband*>& sbVec, DelayModel* model, size_t verbose, int pcal);
 
  /*
  * calculate the lowest process pointer in terms of time among all subband arrays
  */
-double getMinProcPtrTime(vector<Subband*>& sbVec, size_t verbose);
+double getMinProcPtrTime(std::vector<Subband*>& sbVec, size_t verbose);
 
 void gengaussianfilter(float* arr, float* linesignal, int len, float specRes);
 
